@@ -1,0 +1,28 @@
+// swift-tools-version: 6.2
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+import PackageDescription
+
+let package = Package(
+    name: "Input-to-Output-Monitor",
+    platforms: [
+        .macOS(.v13),
+    ],
+    products: [
+        .executable(
+            name: "Input-to-Output-Monitor",
+            targets: ["Input-to-Output-Monitor"]
+        ),
+    ],
+    targets: [
+        .executableTarget(
+            name: "Input-to-Output-Monitor",
+            linkerSettings: [
+                .linkedFramework("AudioToolbox"),
+                .linkedFramework("AudioUnit"),
+                .linkedFramework("CoreAudio"),
+                .linkedFramework("SwiftUI"),
+            ]
+        ),
+    ]
+)
