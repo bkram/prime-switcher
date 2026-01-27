@@ -8,7 +8,7 @@ CONFIGURATION="${1:-release}"
 EXECUTABLE_NAME="Input-to-Output-Monitor"
 APP_NAME="Input-to-Output Monitor"
 BUNDLE_ID="com.mrk.inputtooutputmonitor"
-VERSION="1.0.0"
+VERSION="1.0.1"
 MIN_MACOS="13.0"
 
 BUILD_DIR="$ROOT_DIR/.build"
