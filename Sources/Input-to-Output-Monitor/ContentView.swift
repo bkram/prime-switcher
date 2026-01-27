@@ -174,5 +174,6 @@ private struct LevelBar: View {
             }
         }
         .frame(minWidth: 80, maxWidth: .infinity)
+        .frame(height: 8)
     }
 }
