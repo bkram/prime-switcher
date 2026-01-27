@@ -2,10 +2,12 @@
 
 A minimal macOS SwiftUI app that opens an audio input device and plays it back on a chosen output device using CoreAudio HAL audio units.
 
+![Screenshot](images/Screenshot.png)
+
 ## Run
 
 From this directory:
-an
+
 ```bash
 swift run
 ```
