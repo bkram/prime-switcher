@@ -17,10 +17,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Show toolchain
+      # Optional: keep if you need a specific Xcode for SDKs/build settings
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show Xcode + toolchain
         run: |
+          xcodebuild -version
           xcode-select -p
+          xcrun swift --version
+
+      # Ensure Swift 6.2 even if Xcode on runner is older
+      - name: Set up Swift 6.2
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2"
+
+      - name: Verify Swift 6.2
+        run: |
           swift --version
+          swift --version | grep -q "Swift version 6.2"
 
       - name: Build DMG
         run: ./Scripts/make-dmg.sh
