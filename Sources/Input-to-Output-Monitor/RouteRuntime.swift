@@ -3,7 +3,7 @@ import CoreAudio
 /// Small seams around hardware so lifecycle tests never capture or play audio.
 @MainActor
 protocol InterfaceRouteRuntime: AnyObject {
-    func start(inputDeviceID: AudioDeviceID, outputDeviceID: AudioDeviceID)
+    func start(inputDeviceID: AudioDeviceID, outputDeviceID: AudioDeviceID, channels: InterfaceChannelSelection)
     func stop()
 }
 

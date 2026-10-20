@@ -15,7 +15,7 @@ if [[ -z "${DEVELOPER_DIR:-}" ]]; then
 fi
 
 CONFIGURATION="${1:-release}"
-EXECUTABLE_NAME="Input-to-Output-Monitor"
+EXECUTABLE_NAME="PrimeSwitcher"
 VERSION="1.1.0"
 MIN_MACOS="14.2"
 
@@ -55,11 +55,9 @@ if [[ "$LIPO_INFO" != *"arm64"* || "$LIPO_INFO" != *"x86_64"* ]]; then
   exit 1
 fi
 
-# One binary serves both apps. ApplicationMode picks the tool from the bundle
-# identifier, so each bundle only differs in name, identifier and privacy text.
-# package_app <app name> <executable name> <bundle id> <usage key> <usage text>
+# One app contains both routing workflows.
 package_app() {
-  local app_name="$1" exec_name="$2" bundle_id="$3" usage_key="$4" usage_text="$5"
+  local app_name="$1" exec_name="$2" bundle_id="$3"
   local app_dir="$DIST_DIR/$app_name.app"
   local contents_dir="$app_dir/Contents"
   local macos_dir="$contents_dir/MacOS"
@@ -134,12 +132,6 @@ PLIST
 
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 
-package_app "Input-to-Output Monitor" "Input-to-Output-Monitor" \
-  "com.mrk.inputtooutputmonitor" "NSMicrophoneUsageDescription" \
-  "Input-to-Output Monitor needs microphone access to capture audio input and route it to your selected output device."
-
-package_app "Application Audio Router" "Application-Audio-Router" \
-  "com.mrk.applicationaudiorouter" "NSAudioCaptureUsageDescription" \
-  "Application Audio Router needs system audio access to route selected applications to audio devices you choose."
+package_app "Prime Switcher" "PrimeSwitcher" "com.mrk.primeswitcher"
 
 printf "==> Done\n"

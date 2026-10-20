@@ -24,7 +24,7 @@ A green meter confirms a detected signal, not the physical speaker's audibility.
 | Cog pause/resume | Meter goes quiet and Waiting for audio appears; Audio passing returns on resume | Passed 2026-10-20 on latest tested preview build |
 | Cog route off | Normal Cog output returns; saved destination remains | Passed 2026-10-20: Off with destination/channels retained; user confirmed normal output returned |
 | Two app routes at once | Both outputs audible; disabling one leaves the other active | Pending on hardware; lifecycle unit-tested |
-| Two interface routes at once | Each input reaches its output independently | Pending |
+| Two interface routes at once | Each input reaches its output independently | Passed signal check 2026-10-20: Cog on BlackHole 3–4, four-channel map 3–6 to 9–12, second route 9–10 to speakers; both live meters receive signal |
 | Input/output disconnected and reconnected | Stop while absent; resume saved UID when reconnected | Pending on hardware; lifecycle unit-tested |
 | App quits and relaunches | Wait, then rebuild route for new process objects | Pending on hardware; lifecycle unit-tested |
 | Permission denied, then granted | Clear error; explicit retry succeeds | Pending on macOS; failed-runtime retry unit-tested |
@@ -33,7 +33,7 @@ A green meter confirms a detected signal, not the physical speaker's audibility.
 
 ## Remaining product/distribution work
 
-- Interface routes still use the first one/two input channels; selectable subchannels are not implemented.
+- Interface routes support contiguous mono, stereo, and multichannel groups. Channel maps, persistence, and edits are unit-tested; confirm the desired physical channels on multichannel hardware before release.
 - Signing and notarization require the owner's Apple Developer identity and release setup.
 - Hosted CI results and coverage artifacts are available in [GitHub Actions](https://github.com/bkram/prime-switcher/actions/workflows/ci.yml). Check the current commit before each release.
 - Main branch protection requires the GitHub Actions build/test/lint check, up-to-date pull requests, and resolved conversations. It also applies to admins and blocks force pushes and deletion.

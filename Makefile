@@ -7,30 +7,25 @@ endif
 endif
 export DEVELOPER_DIR ?= $(SELECTED_DEVELOPER_DIR)
 
-APP_NAME := Input-to-Output-Monitor
+APP_NAME := PrimeSwitcher
 JOBS ?= 10
-APP_BUNDLE := dist/Input-to-Output\ Monitor.app
-ROUTER_BUNDLE := dist/Application\ Audio\ Router.app
-DMG := dist/InputToOutputMonitor.dmg
+APP_BUNDLE := dist/Prime\ Switcher.app
+DMG := dist/PrimeSwitcher.dmg
 
-.PHONY: build run run-router clean dist dmg reset-permissions
+.PHONY: build run clean dist dmg reset-permissions
 
 build:
 	swift build -j $(JOBS)
 	@echo ""
 	@echo "Build complete."
 	@echo "Next steps:"
-	@echo "  make run    - Run Input-to-Output Monitor"
-	@echo "  make run-router - Run Application Audio Router"
+	@echo "  make run    - Run Prime Switcher"
 	@echo "  make clean  - Clean build artifacts"
-	@echo "  make dist   - Build both .app bundles in dist/"
+	@echo "  make dist   - Build Prime Switcher.app in dist/"
 	@echo "  make dmg    - Build unsigned DMG in dist/"
 
 run:
-	swift run -j $(JOBS)
-
-run-router:
-	swift run -j $(JOBS) $(APP_NAME) --router
+	swift run -j $(JOBS) $(APP_NAME)
 
 clean:
 	swift package clean
@@ -42,12 +37,9 @@ dmg:
 	./Scripts/make-dmg.sh
 
 reset-permissions:
-	@tccutil reset Microphone "Input-to-Output Monitor" || true
-	@tccutil reset Microphone com.mrk.inputtooutputmonitor || true
-	@tccutil reset AudioCapture com.mrk.applicationaudiorouter || true
-	@tccutil reset Microphone com.apple.Terminal || true
-	@tccutil reset AudioCapture com.apple.Terminal || true
-	@echo "Reset microphone and system audio permissions for both apps and Terminal."
+	@tccutil reset Microphone com.mrk.primeswitcher || true
+	@tccutil reset AudioCapture com.mrk.primeswitcher || true
+	@echo "Reset microphone and system audio permissions for Prime Switcher."
 
 .PHONY: test lint check
 

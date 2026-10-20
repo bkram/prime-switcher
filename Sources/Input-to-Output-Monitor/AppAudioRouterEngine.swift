@@ -195,7 +195,7 @@ final class RouteRunner: ObservableObject {
         // as the tap's UID in the aggregate device's tap list.
         let description = CATapDescription(stereoMixdownOfProcesses: processObjectIDs)
         description.uuid = UUID()
-        description.name = "Application Audio Router: \(applicationName)"
+        description.name = "Prime Switcher: \(applicationName)"
         description.isPrivate = true
         description.muteBehavior = mutesApplication ? .mutedWhenTapped : .unmuted
 
@@ -209,8 +209,8 @@ final class RouteRunner: ObservableObject {
         try validateRouteFormats(tapID: session.tapID, outputDeviceID: outputDevice.deviceID)
 
         let aggregateDescription: [String: Any] = [
-            kAudioAggregateDeviceNameKey: "Application Audio Router Route",
-            kAudioAggregateDeviceUIDKey: "com.mrk.applicationaudiorouter.route.\(UUID().uuidString)",
+            kAudioAggregateDeviceNameKey: "Prime Switcher Route",
+            kAudioAggregateDeviceUIDKey: "com.mrk.primeswitcher.route.\(UUID().uuidString)",
             kAudioAggregateDeviceIsPrivateKey: true,
             kAudioAggregateDeviceIsStackedKey: false,
             kAudioAggregateDeviceMainSubDeviceKey: outputDevice.uid,

@@ -75,8 +75,8 @@ final class InputToOutputDeviceManager: ObservableObject {
     private var isRefreshing = false
 
     private enum DefaultsKey {
-        static let inputUID = "InputToOutputMonitor.selectedInputUID"
-        static let outputUID = "InputToOutputMonitor.selectedOutputUID"
+        static let inputUID = "PrimeSwitcher.selectedInputUID"
+        static let outputUID = "PrimeSwitcher.selectedOutputUID"
     }
 
     init(refreshImmediately: Bool = true) {

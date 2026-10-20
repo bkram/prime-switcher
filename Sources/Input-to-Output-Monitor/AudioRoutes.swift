@@ -58,7 +58,7 @@ final class AudioRouteController: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private var iconCache: [String: NSImage] = [:]
 
-    private static let defaultsKey = "ApplicationAudioRouter.routes.v1"
+    private static let defaultsKey = "PrimeSwitcher.appRoutes.v1"
 
     init(
         processManager: AppAudioProcessManager,
