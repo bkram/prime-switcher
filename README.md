@@ -9,7 +9,19 @@ Connections, enabled/off state, and the selected section are saved in local app 
 
 The two existing app bundles remain supported; both now show the same routing workspace. Each bundle uses its own configuration and privacy permissions.
 
-![Screenshot](images/Screenshot.png)
+## Screenshots
+
+### Interface → Interface
+
+Save input-to-output connections and switch each route on or off independently.
+
+![Interface-to-interface routing with a saved BlackHole input to speaker output connection](images/interface-to-interface.png)
+
+### App → Interface
+
+Choose an app, output interface, and mono or stereo channels. The live meter shows when audio is passing.
+
+![App-to-interface routing with Cog passing audio and a live green level meter](images/app-to-interface.png)
 
 ## Run
 
