@@ -1,0 +1,18 @@
+included:
+  - Sources
+  - Tests
+excluded:
+  - .build
+  - dist
+# Keep complexity limits separate from correctness/style checks for the
+# existing Core Audio callback code. No baseline suppresses new violations.
+disabled_rules:
+  - identifier_name
+  - type_name
+  - line_length
+  - file_length
+  - type_body_length
+  - function_body_length
+  - cyclomatic_complexity
+  - large_tuple
+  - function_parameter_count

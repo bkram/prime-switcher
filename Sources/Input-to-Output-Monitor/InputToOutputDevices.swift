@@ -8,6 +8,23 @@ struct InputToOutputDevice: Identifiable, Hashable {
     let uid: String
     let hasInput: Bool
     let hasOutput: Bool
+    let inputChannelCount: Int
+    let outputChannelCount: Int
+    let transportType: UInt32
+
+    /// SF Symbol for the kind of hardware, as the Sound menu would show it.
+    var symbolName: String {
+        switch transportType {
+        case kAudioDeviceTransportTypeBuiltIn: "speaker.wave.2.fill"
+        case kAudioDeviceTransportTypeVirtual: "waveform"
+        case kAudioDeviceTransportTypeAggregate, kAudioDeviceTransportTypeAutoAggregate: "square.stack.3d.up.fill"
+        case kAudioDeviceTransportTypeBluetooth, kAudioDeviceTransportTypeBluetoothLE: "headphones"
+        case kAudioDeviceTransportTypeHDMI, kAudioDeviceTransportTypeDisplayPort: "tv"
+        case kAudioDeviceTransportTypeAirPlay: "airplayaudio"
+        case kAudioDeviceTransportTypeUSB, kAudioDeviceTransportTypeFireWire, kAudioDeviceTransportTypeThunderbolt: "cable.connector"
+        default: "hifispeaker.fill"
+        }
+    }
 
     var stableID: String { uid }
     var identifier: AudioDeviceID { deviceID }
@@ -62,8 +79,8 @@ final class InputToOutputDeviceManager: ObservableObject {
         static let outputUID = "InputToOutputMonitor.selectedOutputUID"
     }
 
-    init() {
-        refreshDevices(selectDefaults: false)
+    init(refreshImmediately: Bool = true) {
+        if refreshImmediately { refreshDevices(selectDefaults: false) }
     }
 
     func refreshDevices(selectDefaults: Bool = false) {
@@ -154,9 +171,23 @@ final class InputToOutputDeviceManager: ObservableObject {
         return ids.map { id in
             let name = (try? deviceName(id: id)) ?? ""
             let uid = (try? deviceUID(id: id)) ?? "device-\(id)"
-            let hasInput = deviceHasStreams(id: id, scope: kAudioDevicePropertyScopeInput)
-            let hasOutput = deviceHasStreams(id: id, scope: kAudioDevicePropertyScopeOutput)
-            return InputToOutputDevice(deviceID: id, name: name, uid: uid, hasInput: hasInput, hasOutput: hasOutput)
+            let inputChannelCount = deviceChannelCount(id: id, scope: kAudioDevicePropertyScopeInput)
+            let outputChannelCount = deviceChannelCount(id: id, scope: kAudioDevicePropertyScopeOutput)
+            return InputToOutputDevice(
+                deviceID: id,
+                name: name,
+                uid: uid,
+                hasInput: inputChannelCount > 0,
+                hasOutput: outputChannelCount > 0,
+                inputChannelCount: inputChannelCount,
+                outputChannelCount: outputChannelCount,
+                transportType: (try? getValueProperty(
+                    UInt32.self,
+                    objectID: id,
+                    selector: kAudioDevicePropertyTransportType,
+                    scope: kAudioObjectPropertyScopeGlobal
+                )) ?? 0
+            )
         }
     }
 
@@ -214,7 +245,7 @@ final class InputToOutputDeviceManager: ObservableObject {
             "AudioObjectGetPropertyData(string property)"
         )
 
-        return (cfString?.takeUnretainedValue() as String?) ?? ""
+        return (cfString?.takeRetainedValue() as String?) ?? ""
     }
 
     private func deviceHasStreams(id: AudioDeviceID, scope: AudioObjectPropertyScope) -> Bool {
@@ -228,5 +259,29 @@ final class InputToOutputDeviceManager: ObservableObject {
         let status = AudioObjectGetPropertyDataSize(id, &address, 0, nil, &dataSize)
         guard status == noErr else { return false }
         return dataSize > 0
+    }
+
+    private func deviceChannelCount(id: AudioDeviceID, scope: AudioObjectPropertyScope) -> Int {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyStreamConfiguration,
+            mScope: scope,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var dataSize: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(id, &address, 0, nil, &dataSize) == noErr,
+              dataSize > 0 else {
+            return 0
+        }
+
+        let storage = UnsafeMutableRawPointer.allocate(
+            byteCount: Int(dataSize),
+            alignment: MemoryLayout<AudioBufferList>.alignment
+        )
+        defer { storage.deallocate() }
+        guard AudioObjectGetPropertyData(id, &address, 0, nil, &dataSize, storage) == noErr else {
+            return 0
+        }
+        let list = storage.assumingMemoryBound(to: AudioBufferList.self)
+        return UnsafeMutableAudioBufferListPointer(list).reduce(0) { $0 + Int($1.mNumberChannels) }
     }
 }

@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Build, tests, and lint
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.3'
+      - name: Tool versions
+        run: |
+          xcodebuild -version
+          swift --version
+          swiftlint version
+          test "$(swiftlint version)" = "0.65.1"
+      - name: SwiftLint
+        run: make lint
+      - name: Build
+        run: swift build
+      - name: Unit tests with coverage
+        run: swift test --enable-code-coverage
+      - name: Release build
+        run: swift build -c release
+      - name: Collect coverage
+        run: |
+          mkdir -p coverage
+          cp "$(swift test --show-codecov-path)" coverage/coverage.json
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: coverage/coverage.json
+          if-no-files-found: error
