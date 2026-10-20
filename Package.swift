@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "Input-to-Output-Monitor",
     platforms: [
-        .macOS(.v13),
+        .macOS("14.2"),
     ],
     products: [
         .executable(
@@ -23,6 +23,10 @@ let package = Package(
                 .linkedFramework("CoreAudio"),
                 .linkedFramework("SwiftUI"),
             ]
+        ),
+        .testTarget(
+            name: "AudioRouterTests",
+            dependencies: ["Input-to-Output-Monitor"]
         ),
     ]
 )

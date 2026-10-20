@@ -4,49 +4,44 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# SwiftUI macros require the full Xcode toolchain on recent Swift releases.
+if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
+  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+fi
+
 CONFIGURATION="${1:-release}"
 EXECUTABLE_NAME="Input-to-Output-Monitor"
-APP_NAME="Input-to-Output Monitor"
-BUNDLE_ID="com.mrk.inputtooutputmonitor"
-VERSION="1.0.1"
-MIN_MACOS="13.0"
+VERSION="1.1.0"
+MIN_MACOS="14.2"
 
 BUILD_DIR="$ROOT_DIR/.build"
 DIST_DIR="$ROOT_DIR/dist"
-APP_DIR="$DIST_DIR/$APP_NAME.app"
-CONTENTS_DIR="$APP_DIR/Contents"
-MACOS_DIR="$CONTENTS_DIR/MacOS"
-RESOURCES_DIR="$CONTENTS_DIR/Resources"
 ICON_SOURCE="$ROOT_DIR/Resources/AppIcon.icns"
 ICON_DEST_NAME="AppIcon"
-ICON_DEST_PATH="$RESOURCES_DIR/$ICON_DEST_NAME.icns"
 
 printf "==> Building (%s) for arm64 and x86_64\n" "$CONFIGURATION"
-swift build -c "$CONFIGURATION" --arch arm64
-swift build -c "$CONFIGURATION" --arch x86_64
+ARM_SCRATCH="$BUILD_DIR/package-arm64"
+X86_SCRATCH="$BUILD_DIR/package-x86_64"
+swift build -c "$CONFIGURATION" --triple arm64-apple-macosx --scratch-path "$ARM_SCRATCH"
+swift build -c "$CONFIGURATION" --triple x86_64-apple-macosx --scratch-path "$X86_SCRATCH"
 
-# SwiftPM layout varies by toolchain; probe common locations.
-ARM_PATH="$BUILD_DIR/arm64-apple-macosx/$CONFIGURATION/$EXECUTABLE_NAME"
-X86_PATH="$BUILD_DIR/x86_64-apple-macosx/$CONFIGURATION/$EXECUTABLE_NAME"
-EXECUTABLE_PATH=""
+# Ask SwiftPM for its product paths: Xcode versions use different layouts.
+ARM_PRODUCTS="$(swift build -c "$CONFIGURATION" --triple arm64-apple-macosx --scratch-path "$ARM_SCRATCH" --show-bin-path)"
+X86_PRODUCTS="$(swift build -c "$CONFIGURATION" --triple x86_64-apple-macosx --scratch-path "$X86_SCRATCH" --show-bin-path)"
+ARM_PATH="$ARM_PRODUCTS/$EXECUTABLE_NAME"
+X86_PATH="$X86_PRODUCTS/$EXECUTABLE_NAME"
 UNIVERSAL_PATH="$BUILD_DIR/universal/$CONFIGURATION/$EXECUTABLE_NAME"
 
-if [[ -x "$ARM_PATH" && -x "$X86_PATH" ]]; then
-  mkdir -p "$(dirname "$UNIVERSAL_PATH")"
-  lipo -create -output "$UNIVERSAL_PATH" "$ARM_PATH" "$X86_PATH"
-  EXECUTABLE_PATH="$UNIVERSAL_PATH"
-fi
-
-if [[ -z "$EXECUTABLE_PATH" ]]; then
-  # Fallback: search a bit deeper.
-  EXECUTABLE_PATH="$(find "$BUILD_DIR" -type f -name "$EXECUTABLE_NAME" -perm -111 | head -n 1 || true)"
-fi
-
-if [[ -z "$EXECUTABLE_PATH" || ! -x "$EXECUTABLE_PATH" ]]; then
-  echo "error: could not find built executable: $EXECUTABLE_NAME" >&2
-  echo "hint: run 'swift build -c $CONFIGURATION -v' and check .build/" >&2
+if [[ ! -x "$ARM_PATH" || ! -x "$X86_PATH" ]]; then
+  echo "error: could not find both architecture-specific executables" >&2
+  echo "arm64: $ARM_PATH" >&2
+  echo "x86_64: $X86_PATH" >&2
   exit 1
 fi
+
+mkdir -p "$(dirname "$UNIVERSAL_PATH")"
+lipo -create -output "$UNIVERSAL_PATH" "$ARM_PATH" "$X86_PATH"
+EXECUTABLE_PATH="$UNIVERSAL_PATH"
 
 LIPO_INFO="$(lipo -info "$EXECUTABLE_PATH" 2>/dev/null || true)"
 if [[ "$LIPO_INFO" != *"arm64"* || "$LIPO_INFO" != *"x86_64"* ]]; then
@@ -55,25 +50,35 @@ if [[ "$LIPO_INFO" != *"arm64"* || "$LIPO_INFO" != *"x86_64"* ]]; then
   exit 1
 fi
 
-printf "==> Packaging app bundle at %s\n" "$APP_DIR"
-rm -rf "$APP_DIR"
-mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
+# One binary serves both apps. ApplicationMode picks the tool from the bundle
+# identifier, so each bundle only differs in name, identifier and privacy text.
+# package_app <app name> <executable name> <bundle id> <usage key> <usage text>
+package_app() {
+  local app_name="$1" exec_name="$2" bundle_id="$3" usage_key="$4" usage_text="$5"
+  local app_dir="$DIST_DIR/$app_name.app"
+  local contents_dir="$app_dir/Contents"
+  local macos_dir="$contents_dir/MacOS"
+  local resources_dir="$contents_dir/Resources"
 
-cp "$EXECUTABLE_PATH" "$MACOS_DIR/$EXECUTABLE_NAME"
-chmod +x "$MACOS_DIR/$EXECUTABLE_NAME"
+  printf "==> Packaging app bundle at %s\n" "$app_dir"
+  rm -rf "$app_dir"
+  mkdir -p "$macos_dir" "$resources_dir"
 
-ICON_PLIST_SNIPPET=""
-if [[ -f "$ICON_SOURCE" ]]; then
-  printf "==> Including app icon: %s\n" "$ICON_SOURCE"
-  cp "$ICON_SOURCE" "$ICON_DEST_PATH"
-  ICON_PLIST_SNIPPET=$(cat <<ICON
+  cp "$EXECUTABLE_PATH" "$macos_dir/$exec_name"
+  chmod +x "$macos_dir/$exec_name"
+
+  local icon_plist_snippet=""
+  if [[ -f "$ICON_SOURCE" ]]; then
+    printf "==> Including app icon: %s\n" "$ICON_SOURCE"
+    cp "$ICON_SOURCE" "$resources_dir/$ICON_DEST_NAME.icns"
+    icon_plist_snippet=$(cat <<ICON
   <key>CFBundleIconFile</key>
   <string>${ICON_DEST_NAME}</string>
 ICON
 )
-fi
+  fi
 
-cat > "$CONTENTS_DIR/Info.plist" <<PLIST
+  cat > "$contents_dir/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -81,15 +86,15 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleExecutable</key>
-  <string>${EXECUTABLE_NAME}</string>
+  <string>${exec_name}</string>
   <key>CFBundleIdentifier</key>
-  <string>${BUNDLE_ID}</string>
+  <string>${bundle_id}</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>${APP_NAME}</string>
+  <string>${app_name}</string>
   <key>CFBundleDisplayName</key>
-  <string>${APP_NAME}</string>
+  <string>${app_name}</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
@@ -99,24 +104,37 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key>
   <string>${MIN_MACOS}</string>
   <key>NSMicrophoneUsageDescription</key>
-  <string>Input-to-Output Monitor needs microphone access to capture audio input and route it to your selected output device.</string>
-${ICON_PLIST_SNIPPET}
+  <string>Capture audio from your selected input interface.</string>
+  <key>NSAudioCaptureUsageDescription</key>
+  <string>Redirect audio from the applications you choose.</string>
+${icon_plist_snippet}
 </dict>
 </plist>
 PLIST
 
-# Optional legacy metadata; harmless if present.
-printf "APPL????" > "$CONTENTS_DIR/PkgInfo"
+  # Optional legacy metadata; harmless if present.
+  printf "APPL????" > "$contents_dir/PkgInfo"
 
-printf "==> Done\n"
-printf "App bundle: %s\n" "$APP_DIR"
-printf "Run with: open %q\n" "$APP_DIR"
+  if [[ "$SIGN_IDENTITY" == "-" ]]; then
+    printf "==> Code signing (ad-hoc)\n"
+    codesign --force --deep --sign - "$app_dir"
+  else
+    printf "==> Code signing with identity: %s\n" "$SIGN_IDENTITY"
+    codesign --force --deep --options runtime --sign "$SIGN_IDENTITY" "$app_dir"
+  fi
+
+  printf "App bundle: %s\n" "$app_dir"
+  printf "Run with: open %q\n" "$app_dir"
+}
 
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
-if [[ "$SIGN_IDENTITY" == "-" ]]; then
-  printf "==> Code signing (ad-hoc)\n"
-  codesign --force --deep --sign - "$APP_DIR"
-else
-  printf "==> Code signing with identity: %s\n" "$SIGN_IDENTITY"
-  codesign --force --deep --options runtime --sign "$SIGN_IDENTITY" "$APP_DIR"
-fi
+
+package_app "Input-to-Output Monitor" "Input-to-Output-Monitor" \
+  "com.mrk.inputtooutputmonitor" "NSMicrophoneUsageDescription" \
+  "Input-to-Output Monitor needs microphone access to capture audio input and route it to your selected output device."
+
+package_app "Application Audio Router" "Application-Audio-Router" \
+  "com.mrk.applicationaudiorouter" "NSAudioCaptureUsageDescription" \
+  "Application Audio Router needs system audio access to route selected applications to audio devices you choose."
+
+printf "==> Done\n"

@@ -155,6 +155,7 @@ final class InputToOutputMonitorEngine: ObservableObject {
                     guard let self else { return }
                     self.isRequestingPermission = false
                     print("Mic permission granted: \(granted)")
+                    guard self.isStarting else { return }
                     if granted {
                         self.startInternal(inputDeviceID: inputDeviceID, outputDeviceID: outputDeviceID)
                     } else {
