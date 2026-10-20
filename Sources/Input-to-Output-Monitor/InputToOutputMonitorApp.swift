@@ -37,7 +37,7 @@ struct InputToOutputMonitorApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Prime Switcher") {
-                    NSApp.orderFrontStandardAboutPanel(nil)
+                    showAboutPanel()
                 }
             }
             CommandGroup(after: .appInfo) {
@@ -63,6 +63,38 @@ struct InputToOutputMonitorApp: App {
                     .keyboardShortcut("r", modifiers: [.command])
             }
         }
+    }
+
+    private func showAboutPanel() {
+        let bundle = Bundle.main
+        let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development"
+        let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: NSFont.systemFontSize),
+            .foregroundColor: NSColor.labelColor,
+            .paragraphStyle: paragraph
+        ]
+        let credits = NSMutableAttributedString(
+            string: "Audio routing for apps and interfaces.\n\n",
+            attributes: attributes
+        )
+        var linkAttributes = attributes
+        linkAttributes[.link] = URL(string: "https://github.com/bkram/prime-switcher")
+        credits.append(NSAttributedString(string: "Prime Switcher on GitHub", attributes: linkAttributes))
+        if bundle.object(forInfoDictionaryKey: "NSHumanReadableCopyright") == nil {
+            credits.append(NSAttributedString(
+                string: "\n\n© 2026 Bkram Developments. All rights reserved.",
+                attributes: attributes
+            ))
+        }
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .applicationName: "Prime Switcher",
+            .applicationVersion: version,
+            .version: build == version ? "" : build,
+            .credits: credits
+        ])
     }
 
     /// `--route-self-test <bundle ID>,<output UID>,<left>,<right> …`: run each
