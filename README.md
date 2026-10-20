@@ -67,7 +67,7 @@ Notes:
 
 ## App Icon
 
-The silver routing valve and cyan signal path represent choosing where audio flows.
+The monochrome routing symbol represents choosing where audio flows.
 The source artwork is `Resources/AppIcon.png`; its generation prompt is in
 `Resources/AppIcon.md`.
 
