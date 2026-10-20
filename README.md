@@ -67,14 +67,13 @@ Notes:
 
 ## App Icon
 
-The bundler will include an icon automatically if you place:
-- `Resources/AppIcon.icns`
+The silver routing valve and cyan signal path represent choosing where audio flows.
+The source artwork is `Resources/AppIcon.png`; its generation prompt is in
+`Resources/AppIcon.md`.
 
-Quick macOS-native workflow:
-1. Create a square 1024x1024 PNG (e.g., headphones artwork).
-2. Open it in Preview and export as multiple PNG sizes if desired.
-3. Use `iconutil` with an iconset folder to produce `AppIcon.icns`, then place it at `Resources/AppIcon.icns`.
-4. Rebuild the app bundle or DMG.
+Run `./Scripts/make-icon.sh` to generate `Resources/AppIcon.icns`, including
+standard and Retina sizes from 16 to 1024 pixels. Rebuild the app bundle or DMG
+to include the updated icon.
 
 ## Key files
 

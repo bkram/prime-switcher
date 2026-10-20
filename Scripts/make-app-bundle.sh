@@ -22,7 +22,7 @@ MIN_MACOS="14.2"
 BUILD_DIR="$ROOT_DIR/.build"
 DIST_DIR="$ROOT_DIR/dist"
 ICON_SOURCE="$ROOT_DIR/Resources/AppIcon.icns"
-ICON_DEST_NAME="AppIcon"
+ICON_DEST_NAME="PrimeSwitcherIcon"
 
 printf "==> Building (%s) for arm64 and x86_64\n" "$CONFIGURATION"
 ARM_SCRATCH="$BUILD_DIR/package-arm64"
