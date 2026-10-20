@@ -104,6 +104,8 @@ ICON
   <string>${VERSION}</string>
   <key>CFBundleVersion</key>
   <string>${VERSION}</string>
+  <key>NSHumanReadableCopyright</key>
+  <string>© 2026 Bkram Developments. All rights reserved.</string>
   <key>LSMinimumSystemVersion</key>
   <string>${MIN_MACOS}</string>
   <key>NSMicrophoneUsageDescription</key>
