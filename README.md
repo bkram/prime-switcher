@@ -1,4 +1,4 @@
-# Input-to-Output Monitor (macOS)
+# Prime Switcher (macOS)
 
 A native macOS audio routing window with two sections:
 

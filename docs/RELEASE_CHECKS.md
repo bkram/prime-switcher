@@ -36,4 +36,4 @@ A green meter confirms a detected signal, not the physical speaker's audibility.
 - Interface routes still use the first one/two input channels; selectable subchannels are not implemented.
 - Signing and notarization require the owner's Apple Developer identity and release setup.
 - CI files are prepared locally; a successful hosted run has not been verified.
-- Repository branch protection must require the CI check to prevent merging failed pull requests.
+- Main branch protection requires the GitHub Actions build/test/lint check, up-to-date pull requests, and resolved conversations. It also applies to admins and blocks force pushes and deletion.
