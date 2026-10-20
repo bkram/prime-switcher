@@ -43,6 +43,8 @@ jobs:
         run: swift test --enable-code-coverage
       - name: Release build
         run: swift build -c release
+      - name: Universal app bundle smoke test
+        run: ./Scripts/make-app-bundle.sh
       - name: Collect coverage
         run: |
           mkdir -p coverage
