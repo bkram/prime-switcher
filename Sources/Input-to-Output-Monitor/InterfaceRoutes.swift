@@ -8,6 +8,7 @@ struct InterfaceRoute: Identifiable, Codable, Equatable {
     var outputUID: String
     var outputName: String
     var isEnabled = false
+    var channelSelection = InterfaceChannelSelection()
 }
 
 @MainActor
@@ -88,7 +89,7 @@ final class InterfaceRouteController: ObservableObject {
                 let engine = makeRuntime()
                 runtimes[route.id] = engine
                 engines[route.id] = engine as? InputToOutputMonitorEngine
-                engine.start(inputDeviceID: input.deviceID, outputDeviceID: output.deviceID)
+                engine.start(inputDeviceID: input.deviceID, outputDeviceID: output.deviceID, channels: route.channelSelection)
             }
         }
     }
@@ -112,7 +113,7 @@ struct InterfaceRoutesView: View {
                 List(controller.routes) { route in
                     RouteRowLayout(
                         source: route.inputName, destination: route.outputName,
-                        detail: "Input audio",
+                        detail: route.channelSelection.summary,
                         isEnabled: Binding(get: { route.isEnabled }, set: { controller.setEnabled(route, $0) }),
                         edit: { editor = route }, remove: { controller.remove(route) },
                         icon: {
@@ -170,10 +171,32 @@ private struct InterfaceRouteEditor: View {
                         Text(draft.outputUID.isEmpty ? "Choose an Output" : draft.outputName).tag(draft.outputUID)
                         ForEach(controller.devices.outputDevices.filter { $0.uid != draft.outputUID }) { Text($0.displayName).tag($0.uid) }
                     }
-                } footer: {
-                    Text("New routes start off. Switch a route on to forward audio, or off to stop without losing its settings.")
-                        .font(.footnote).foregroundStyle(.secondary)
                 }
+                Section {
+                    Picker("Channel Count", selection: $draft.channelSelection.count) {
+                        if maximumChannels > 0 {
+                            ForEach(1...maximumChannels, id: \.self) { count in
+                                Text(count == 1 ? "1 (Mono)" : count == 2 ? "2 (Stereo)" : "\(count) channels").tag(count)
+                            }
+                        } else {
+                            Text("Connect both interfaces").tag(draft.channelSelection.count)
+                        }
+                    }
+                    Picker("First Input Channel", selection: $draft.channelSelection.inputStart) {
+                        ForEach(0..<inputStartCount, id: \.self) { Text("\($0 + 1)").tag($0) }
+                    }
+                    Picker("First Output Channel", selection: $draft.channelSelection.outputStart) {
+                        ForEach(0..<outputStartCount, id: \.self) { Text("\($0 + 1)").tag($0) }
+                    }
+                } header: {
+                    Text("Channels")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("\(draft.channelSelection.summary). Channels connect one-to-one; unused outputs stay silent.")
+                        Text("New routes start off. Switch a route on to forward audio, or off to stop without losing its settings.")
+                    }.font(.footnote).foregroundStyle(.secondary)
+                }
+                .disabled(maximumChannels == 0)
             }.formStyle(.grouped)
             Divider()
             HStack {
@@ -181,12 +204,34 @@ private struct InterfaceRouteEditor: View {
                 Button("Cancel", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
                 Button("Save Route") { controller.save(draft); dismiss() }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(draft.inputUID.isEmpty || draft.outputUID.isEmpty)
+                    .disabled(!draft.channelSelection.isValid(inputCount: input?.inputChannelCount ?? 0, outputCount: output?.outputChannelCount ?? 0))
             }.padding(16)
         }.frame(width: 480)
-        .onChange(of: draft.inputUID) { draft.inputName = controller.devices.inputDevices.first { $0.uid == draft.inputUID }?.displayName ?? draft.inputName }
-        .onChange(of: draft.outputUID) { draft.outputName = controller.devices.outputDevices.first { $0.uid == draft.outputUID }?.displayName ?? draft.outputName }
+        .onAppear { clampChannels() }
+        .onChange(of: draft.inputUID) {
+            draft.inputName = input?.displayName ?? draft.inputName
+            clampChannels()
+        }
+        .onChange(of: draft.outputUID) {
+            draft.outputName = output?.displayName ?? draft.outputName
+            clampChannels()
+        }
+        .onChange(of: draft.channelSelection.count) { clampChannels() }
     }
+
+    private var input: InputToOutputDevice? { controller.devices.inputDevices.first { $0.uid == draft.inputUID } }
+    private var output: InputToOutputDevice? { controller.devices.outputDevices.first { $0.uid == draft.outputUID } }
+    private var maximumChannels: Int { min(input?.inputChannelCount ?? 0, output?.outputChannelCount ?? 0) }
+    private var inputStartCount: Int { max(1, (input?.inputChannelCount ?? 0) - draft.channelSelection.count + 1) }
+    private var outputStartCount: Int { max(1, (output?.outputChannelCount ?? 0) - draft.channelSelection.count + 1) }
+
+    private func clampChannels() {
+        guard maximumChannels > 0 else { return }
+        draft.channelSelection.count = min(max(1, draft.channelSelection.count), maximumChannels)
+        draft.channelSelection.inputStart = min(max(0, draft.channelSelection.inputStart), inputStartCount - 1)
+        draft.channelSelection.outputStart = min(max(0, draft.channelSelection.outputStart), outputStartCount - 1)
+    }
+
 }
 
 private struct InterfaceSignalMeter: View {

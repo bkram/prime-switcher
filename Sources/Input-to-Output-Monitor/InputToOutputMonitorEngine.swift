@@ -127,6 +127,7 @@ final class InputToOutputMonitorEngine: ObservableObject {
     nonisolated(unsafe) private var rawLevelLeft: Float = 0
     nonisolated(unsafe) private var rawLevelRight: Float = 0
 
+    private var selectedChannels = InterfaceChannelSelection()
     private var meterTimer: Timer?
     private var isRequestingPermission: Bool = false
     private var isStarting: Bool = false
@@ -135,8 +136,9 @@ final class InputToOutputMonitorEngine: ObservableObject {
         cleanupUnits()
     }
 
-    func start(inputDeviceID: AudioDeviceID, outputDeviceID: AudioDeviceID) {
+    func start(inputDeviceID: AudioDeviceID, outputDeviceID: AudioDeviceID, channels: InterfaceChannelSelection) {
         guard !isRunning && !isStarting else { return }
+        selectedChannels = channels
         isStarting = true
         print("InputToOutputMonitorEngine.start called")
 
@@ -183,6 +185,7 @@ final class InputToOutputMonitorEngine: ObservableObject {
             setState(isRunning: true, message: "Monitoring")
         } catch {
             print("InputToOutputMonitorEngine.startInternal error: \(error)")
+            try? stopInternal()
             setState(isRunning: false, message: error.localizedDescription)
         }
     }
@@ -206,14 +209,20 @@ final class InputToOutputMonitorEngine: ObservableObject {
     private func configureAndStart(inputDeviceID: AudioDeviceID, outputDeviceID: AudioDeviceID) throws {
         let inputSampleRate = try deviceSampleRate(deviceID: inputDeviceID)
         let inputChannels = max(1, try deviceChannelCount(deviceID: inputDeviceID, scope: kAudioDevicePropertyScopeInput))
-        let desiredChannels = min(inputChannels, 2)
+        let outputChannels = try deviceChannelCount(deviceID: outputDeviceID, scope: kAudioDevicePropertyScopeOutput)
+        guard selectedChannels.isValid(inputCount: Int(inputChannels), outputCount: Int(outputChannels)) else {
+            throw CoreAudioError.message("Selected channels are not available on these interfaces.")
+        }
+        let desiredChannels = UInt32(selectedChannels.count)
 
         var asbd = makeASBD(sampleRate: inputSampleRate, channels: desiredChannels)
 
         let inUnit = try makeHALAudioUnit()
+        inputUnit = inUnit
         try configureInputUnit(inUnit, deviceID: inputDeviceID, format: &asbd)
 
         let outUnit = try makeHALAudioUnit()
+        outputUnit = outUnit
         try configureOutputUnit(outUnit, deviceID: outputDeviceID, format: &asbd)
 
         let capacityFrames = Int(inputSampleRate * 2.0)
@@ -241,10 +250,12 @@ final class InputToOutputMonitorEngine: ObservableObject {
         if let inputUnit {
             _ = AudioOutputUnitStop(inputUnit)
             _ = AudioUnitUninitialize(inputUnit)
+            _ = AudioComponentInstanceDispose(inputUnit)
         }
         if let outputUnit {
             _ = AudioOutputUnitStop(outputUnit)
             _ = AudioUnitUninitialize(outputUnit)
+            _ = AudioComponentInstanceDispose(outputUnit)
         }
         inputUnit = nil
         outputUnit = nil
@@ -333,6 +344,7 @@ final class InputToOutputMonitorEngine: ObservableObject {
             "Set input callback"
         )
 
+        try setChannelMap(selectedChannels.inputMap, on: unit, scope: kAudioUnitScope_Output, element: 1)
         try checkStatus(AudioUnitInitialize(unit), "AudioUnitInitialize(input)")
     }
 
@@ -370,7 +382,18 @@ final class InputToOutputMonitorEngine: ObservableObject {
             "Set output render callback"
         )
 
+        let hardwareChannels = Int(try deviceChannelCount(deviceID: deviceID, scope: kAudioDevicePropertyScopeOutput))
+        try setChannelMap(selectedChannels.outputMap(hardwareChannels: hardwareChannels), on: unit, scope: kAudioUnitScope_Output, element: 0)
         try checkStatus(AudioUnitInitialize(unit), "AudioUnitInitialize(output)")
+    }
+
+    private func setChannelMap(_ map: [Int32], on unit: AudioUnit, scope: AudioUnitScope, element: AudioUnitElement) throws {
+        _ = try map.withUnsafeBufferPointer { buffer in
+            try checkStatus(AudioUnitSetProperty(
+                unit, kAudioOutputUnitProperty_ChannelMap, scope, element,
+                buffer.baseAddress, UInt32(buffer.count * MemoryLayout<Int32>.size)
+            ), "Set interface channel map")
+        }
     }
 
     nonisolated fileprivate func handleInput(unit: AudioUnit, flags: UnsafeMutablePointer<AudioUnitRenderActionFlags>, timeStamp: UnsafePointer<AudioTimeStamp>, busNumber: UInt32, frameCount: UInt32) -> OSStatus {
@@ -470,20 +493,19 @@ final class InputToOutputMonitorEngine: ObservableObject {
             return
         }
 
-        var sumSquaresL: Float = 0
-        var sumSquaresR: Float = 0
-        for frame in 0..<frames {
-            let base = frame * channels
-            let l = samples[base]
-            let r = samples[base + 1]
-            sumSquaresL += l * l
-            sumSquaresR += r * r
+        var peakEven: Float = 0
+        var peakOdd: Float = 0
+        for channel in 0..<channels {
+            var sumSquares: Float = 0
+            for frame in 0..<frames {
+                let sample = samples[frame * channels + channel]
+                sumSquares += sample * sample
+            }
+            let level = normalizeRMS(sqrtf(sumSquares / Float(frames)))
+            if channel.isMultiple(of: 2) { peakEven = max(peakEven, level) } else { peakOdd = max(peakOdd, level) }
         }
-
-        let rmsL = sqrtf(sumSquaresL / Float(frames))
-        let rmsR = sqrtf(sumSquaresR / Float(frames))
-        rawLevelLeft = normalizeRMS(rmsL)
-        rawLevelRight = normalizeRMS(rmsR)
+        rawLevelLeft = peakEven
+        rawLevelRight = peakOdd
     }
 }
 

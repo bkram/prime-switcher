@@ -2,7 +2,7 @@
 
 A native macOS audio routing window with two sections:
 
-- **Interface → Interface:** save multiple input-to-output connections, each with its own switch.
+- **Interface → Interface:** save multiple input-to-output connections, each with its own switch. Choose mono, stereo, or a larger channel group, plus the first input and output channels.
 - **App → Interface:** save routes from multiple applications to selected output devices and channels.
 
 Connections, enabled/off state, and the selected section are saved in local app configuration (UserDefaults). Enabled routes resume on launch; unavailable applications or interfaces wait until they return. Switching an interface route off stops forwarding. Switching an app route off restores the application's normal audio output. Both keep their saved settings so they can be enabled again. New connections start off.
@@ -13,15 +13,15 @@ One **Prime Switcher.app** contains both sections and keeps both route lists in 
 
 ### Interface → Interface
 
-Save input-to-output connections and switch each route on or off independently.
+Save input-to-output connections, choose the channel count and input/output ranges, and switch each route on or off independently.
 
-![Interface-to-interface routing with a saved BlackHole input to speaker output connection](images/interface-to-interface.png)
+![Prime Switcher forwarding BlackHole inputs 3–6 to outputs 9–12 and monitoring inputs 9–10 on speakers](images/interface-to-interface.png)
 
 ### App → Interface
 
 Choose an app, output interface, and mono or stereo channels. The live meter shows when audio is passing.
 
-![Prime Switcher app-to-interface routing with a saved Cog stereo output route](images/app-to-interface.png)
+![Prime Switcher routing Cog audio to BlackHole outputs 3–4 with a live green meter](images/app-to-interface.png)
 
 ## Run
 

@@ -20,7 +20,11 @@ private final class FakeAppRuntime: AppRouteRuntime {
 private final class FakeInterfaceRuntime: InterfaceRouteRuntime {
     var starts = 0
     var stops = 0
-    func start(inputDeviceID: AudioDeviceID, outputDeviceID: AudioDeviceID) { starts += 1 }
+    var channels: InterfaceChannelSelection?
+    func start(inputDeviceID: AudioDeviceID, outputDeviceID: AudioDeviceID, channels: InterfaceChannelSelection) {
+        starts += 1
+        self.channels = channels
+    }
     func stop() { stops += 1 }
 }
 
@@ -221,6 +225,7 @@ struct RouteControllerTests {
         controller.save(first)
         controller.save(second)
         first.outputUID = "another-output"
+        first.channelSelection = InterfaceChannelSelection(inputStart: 2, outputStart: 4, count: 4)
         controller.save(first)
         #expect(fixture.interfaces().routes == [first, second])
         controller.remove(first)
@@ -287,6 +292,21 @@ struct RouteControllerTests {
         #expect(fixture.interfaceRuntimes[0].stops == 1)
         controller.stopAll()
         #expect(fixture.interfaceRuntimes[1].stops == 1)
+    }
+
+    @Test func interfaceChannelEditRestartsRuntimeWithSavedSelection() {
+        let fixture = Fixture()
+        defer { fixture.cleanUp() }
+        let controller = fixture.interfaces()
+        var route = interfaceRoute()
+        controller.save(route)
+        controller.reconcile(inputs: [device(uid: "input")], outputs: [device()])
+        route.channelSelection = InterfaceChannelSelection(inputStart: 1, outputStart: 3, count: 1)
+        controller.save(route)
+        controller.reconcile(inputs: [device(uid: "input")], outputs: [device()])
+        #expect(fixture.interfaceRuntimes[0].stops == 1)
+        #expect(fixture.interfaceRuntimes[1].channels == route.channelSelection)
+        #expect(fixture.interfaces().routes[0].channelSelection == route.channelSelection)
     }
 
     @Test func corruptConfigurationStartsEmpty() {
