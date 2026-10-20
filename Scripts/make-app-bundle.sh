@@ -4,9 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-# SwiftUI macros require the full Xcode toolchain on recent Swift releases.
-if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
-  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+# Honor the toolchain selected by CI/xcode-select. Fall back to full Xcode
+# only when the selected developer directory is the standalone command-line tools.
+if [[ -z "${DEVELOPER_DIR:-}" ]]; then
+  SELECTED_DEVELOPER_DIR="$(xcode-select -p)"
+  if [[ "$SELECTED_DEVELOPER_DIR" == *CommandLineTools* && -d /Applications/Xcode.app/Contents/Developer ]]; then
+    SELECTED_DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+  fi
+  export DEVELOPER_DIR="$SELECTED_DEVELOPER_DIR"
 fi
 
 CONFIGURATION="${1:-release}"

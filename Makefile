@@ -1,7 +1,11 @@
-# Use the full Xcode toolchain when available; the CLT SDK may not match Swift.
+# Honor CI's selected Xcode. Use full Xcode if only CLT is selected locally.
+SELECTED_DEVELOPER_DIR := $(shell xcode-select -p)
+ifneq ($(findstring CommandLineTools,$(SELECTED_DEVELOPER_DIR)),)
 ifneq ($(wildcard /Applications/Xcode.app/Contents/Developer),)
-export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
+SELECTED_DEVELOPER_DIR := /Applications/Xcode.app/Contents/Developer
 endif
+endif
+export DEVELOPER_DIR ?= $(SELECTED_DEVELOPER_DIR)
 
 APP_NAME := Input-to-Output-Monitor
 JOBS ?= 10
