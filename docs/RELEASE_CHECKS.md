@@ -35,5 +35,5 @@ A green meter confirms a detected signal, not the physical speaker's audibility.
 
 - Interface routes still use the first one/two input channels; selectable subchannels are not implemented.
 - Signing and notarization require the owner's Apple Developer identity and release setup.
-- CI files are prepared locally; a successful hosted run has not been verified.
+- Hosted CI results and coverage artifacts are available in [GitHub Actions](https://github.com/bkram/prime-switcher/actions/workflows/ci.yml). Check the current commit before each release.
 - Main branch protection requires the GitHub Actions build/test/lint check, up-to-date pull requests, and resolved conversations. It also applies to admins and blocks force pushes and deletion.
