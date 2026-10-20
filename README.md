@@ -7,7 +7,7 @@ A native macOS audio routing window with two sections:
 
 Connections, enabled/off state, and the selected section are saved in local app configuration (UserDefaults). Enabled routes resume on launch; unavailable applications or interfaces wait until they return. Switching an interface route off stops forwarding. Switching an app route off restores the application's normal audio output. Both keep their saved settings so they can be enabled again. New connections start off.
 
-The two existing app bundles remain supported; both now show the same routing workspace. Each bundle uses its own configuration and privacy permissions.
+One **Prime Switcher.app** contains both sections and keeps both route lists in the same configuration. Prime Switcher uses its own configuration and app identity.
 
 ## Screenshots
 
@@ -21,50 +21,44 @@ Save input-to-output connections and switch each route on or off independently.
 
 Choose an app, output interface, and mono or stereo channels. The live meter shows when audio is passing.
 
-![App-to-interface routing with Cog passing audio and a live green level meter](images/app-to-interface.png)
+![Prime Switcher app-to-interface routing with a saved Cog stereo output route](images/app-to-interface.png)
 
 ## Run
 
 From this directory:
 
 ```bash
-swift run            # Input-to-Output Monitor
-make run-router      # Application Audio Router (swift run Input-to-Output-Monitor --router)
+make run             # Run Prime Switcher with both routing sections
 ```
 
 Notes:
 - You may need to grant microphone access to your terminal (System Settings -> Privacy & Security -> Microphone).
 - Application routing requires macOS 14.2 or later and System Audio Recording permission. A packaged app receives the most reliable permission identity.
 - Some device pairs may fail if the output device does not support the input device's sample rate and channel count.
-- Application Audio Router keeps a list of **routes**. A route sends one application to one or two outputs of a device, for example Chrome to outputs 3–4 and Firefox to outputs 5–6 of BlackHole 16ch. Add one with **+** or ⌘N; double-click a route to edit it, press Delete to remove it, or use its switch to turn it off. Routes are saved, start when their application opens, and rebuild when it relaunches. An application can be in one route at a time; routes on the same outputs are mixed.
+- Prime Switcher keeps a list of **routes**. A route sends one application to one or two outputs of a device, for example Chrome to outputs 3–4 and Firefox to outputs 5–6 of BlackHole 16ch. Add one with **+** or ⌘N; double-click a route to edit it, press Delete to remove it, or use its switch to turn it off. Routes are saved, start when their application opens, and rebuild when it relaunches. An application can be in one route at a time; routes on the same outputs are mixed.
 - Bluetooth, AirPlay, HDMI, and unusual multichannel layouts should be treated as experimental.
 
 ## App Bundle (Distribution)
 
-Build both distributable `.app` bundles:
+Build the universal app for Apple silicon and Intel Macs:
 
 ```bash
 ./Scripts/make-app-bundle.sh
 ```
 
-The script builds one universal binary and packages it twice:
-- `dist/Input-to-Output Monitor.app` (`com.mrk.inputtooutputmonitor`, asks for microphone access)
-- `dist/Application Audio Router.app` (`com.mrk.applicationaudiorouter`, asks for System Audio Recording access)
-
-Run them with:
+The script produces `dist/Prime Switcher.app`. Both input-interface capture and application-audio capture permissions belong to this one app. Its bundle identifier is `com.mrk.primeswitcher`.
 
 ```bash
-open "dist/Input-to-Output Monitor.app"
-open "dist/Application Audio Router.app"
+open "dist/Prime Switcher.app"
 ```
 
 ## DMG Package (Unsigned)
 
-Create a simple unsigned DMG containing both apps:
+Create an unsigned DMG containing Prime Switcher and an Applications shortcut:
 
 ```bash
 ./Scripts/make-dmg.sh
-open dist/InputToOutputMonitor.dmg
+open dist/PrimeSwitcher.dmg
 ```
 
 Notes:

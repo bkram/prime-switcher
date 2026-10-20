@@ -1,34 +1,12 @@
 import SwiftUI
 import AppKit
 
-enum ApplicationMode: Equatable {
-    case inputMonitor
-    case applicationRouter
-
-    static var current: ApplicationMode {
-        if Bundle.main.bundleIdentifier == "com.mrk.applicationaudiorouter"
-            || CommandLine.arguments.contains("--router") {
-            return .applicationRouter
-        }
-        return .inputMonitor
-    }
-
-    var displayName: String {
-        switch self {
-        case .inputMonitor: "Input-to-Output Monitor"
-        case .applicationRouter: "Application Audio Router"
-        }
-    }
-}
-
 @main
 struct InputToOutputMonitorApp: App {
     @StateObject private var deviceManager: InputToOutputDeviceManager
-    @StateObject private var engine = InputToOutputMonitorEngine()
     @StateObject private var processManager: AppAudioProcessManager
     @StateObject private var interfaceController: InterfaceRouteController
     @StateObject private var routeController: AudioRouteController
-    private let appMode = ApplicationMode.current
 
     init() {
         // The route controller watches the same device and process lists the
@@ -48,7 +26,6 @@ struct InputToOutputMonitorApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(deviceManager)
-                .environmentObject(engine)
                 .environmentObject(processManager)
                 .environmentObject(routeController)
                 .environmentObject(interfaceController)
@@ -59,20 +36,20 @@ struct InputToOutputMonitorApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("About \(appMode.displayName)") {
+                Button("About Prime Switcher") {
                     NSApp.orderFrontStandardAboutPanel(nil)
                 }
             }
             CommandGroup(after: .appInfo) {
                 Divider()
-                Button("Quit \(appMode.displayName)") {
+                Button("Quit Prime Switcher") {
                     stopAndQuit()
                 }
                 .keyboardShortcut("q")
             }
             CommandGroup(replacing: .newItem) {
                 Button("New App Route…") {
-                    UserDefaults.standard.set(1, forKey: "AudioRouter.selectedSection")
+                    UserDefaults.standard.set(1, forKey: "PrimeSwitcher.selectedSection")
                     routeController.isPresentingNewRoute = true
                 }.keyboardShortcut("n", modifiers: [.command])
             }
@@ -91,7 +68,7 @@ struct InputToOutputMonitorApp: App {
     /// `--route-self-test <bundle ID>,<output UID>,<left>,<right> …`: run each
     /// route, unmuted, for three seconds, write the measured levels to
     /// /tmp/router-self-test.txt and quit. Channels are one-based. Run with
-    /// `open -n -W "Application Audio Router.app" --args …` so the test uses
+    /// `open -n -W "Prime Switcher.app" --args …` so the test uses
     /// the app's own System Audio Recording permission.
     private func runSelfTestIfRequested() {
         let arguments = CommandLine.arguments
@@ -132,7 +109,6 @@ struct InputToOutputMonitorApp: App {
     }
 
     private func stopAndQuit() {
-        engine.stop()
         interfaceController.stopAll()
         routeController.stopAll()
         NSApp.terminate(nil)

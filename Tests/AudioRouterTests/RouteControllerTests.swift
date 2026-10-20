@@ -292,7 +292,7 @@ struct RouteControllerTests {
     @Test func corruptConfigurationStartsEmpty() {
         let fixture = Fixture()
         defer { fixture.cleanUp() }
-        for key in ["ApplicationAudioRouter.routes.v1", "ApplicationAudioRouter.interfaceRoutes.v1"] {
+        for key in ["PrimeSwitcher.appRoutes.v1", "PrimeSwitcher.interfaceRoutes.v1"] {
             fixture.defaults.set(Data("invalid JSON".utf8), forKey: key)
         }
         #expect(fixture.apps().routes.isEmpty)

@@ -41,13 +41,13 @@ jobs:
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: InputToOutputMonitor-dmg
-          path: dist/InputToOutputMonitor.dmg
+          name: PrimeSwitcher-dmg
+          path: dist/PrimeSwitcher.dmg
           if-no-files-found: error
 
       - name: Create GitHub release and attach DMG
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/InputToOutputMonitor.dmg
+          files: dist/PrimeSwitcher.dmg
           generate_release_notes: true

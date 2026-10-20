@@ -20,7 +20,7 @@ final class InterfaceRouteController: ObservableObject {
     private var runtimes: [UUID: any InterfaceRouteRuntime] = [:]
     private var deviceKeys: [UUID: String] = [:]
     private var observations: Set<AnyCancellable> = []
-    private static let key = "ApplicationAudioRouter.interfaceRoutes.v1"
+    private static let key = "PrimeSwitcher.interfaceRoutes.v1"
 
     init(
         devices: InputToOutputDeviceManager,

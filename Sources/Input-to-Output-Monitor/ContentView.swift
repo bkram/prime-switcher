@@ -4,7 +4,7 @@ import CoreAudio
 
 struct ContentView: View {
 
-    @AppStorage("AudioRouter.selectedSection") private var selectedSection = 0
+    @AppStorage("PrimeSwitcher.selectedSection") private var selectedSection = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -20,7 +20,7 @@ struct ContentView: View {
             if selectedSection == 0 { InterfaceRoutesView() } else { RoutesView() }
         }
         .frame(minWidth: 860, idealWidth: 940, minHeight: 480, idealHeight: 560)
-        .navigationTitle("Audio Routes")
+        .navigationTitle("Prime Switcher")
     }
 
 }

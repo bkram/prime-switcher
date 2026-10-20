@@ -4,13 +4,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "Input-to-Output-Monitor",
+    name: "PrimeSwitcher",
     platforms: [
         .macOS("14.2"),
     ],
     products: [
         .executable(
-            name: "Input-to-Output-Monitor",
+            name: "PrimeSwitcher",
             targets: ["Input-to-Output-Monitor"]
         ),
     ],
