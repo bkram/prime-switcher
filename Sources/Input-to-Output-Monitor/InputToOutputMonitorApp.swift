@@ -3,6 +3,8 @@ import AppKit
 
 @main
 struct InputToOutputMonitorApp: App {
+    @NSApplicationDelegateAdaptor(PrimeSwitcherAppDelegate.self) private var appDelegate
+    @Environment(\.openWindow) private var openWindow
     @StateObject private var deviceManager: InputToOutputDeviceManager
     @StateObject private var processManager: AppAudioProcessManager
     @StateObject private var interfaceController: InterfaceRouteController
@@ -23,13 +25,16 @@ struct InputToOutputMonitorApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        Window("Prime Switcher", id: "main") {
             ContentView()
                 .environmentObject(deviceManager)
                 .environmentObject(processManager)
                 .environmentObject(routeController)
                 .environmentObject(interfaceController)
-                .onAppear { runSelfTestIfRequested() }
+                .onAppear {
+                    appDelegate.reopenMainWindow = { openWindow(id: "main") }
+                    runSelfTestIfRequested()
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
@@ -49,9 +54,16 @@ struct InputToOutputMonitorApp: App {
             }
             CommandGroup(replacing: .newItem) {
                 Button("New App Route…") {
+                    openWindow(id: "main")
                     UserDefaults.standard.set(1, forKey: "PrimeSwitcher.selectedSection")
                     routeController.isPresentingNewRoute = true
                 }.keyboardShortcut("n", modifiers: [.command])
+            }
+            CommandGroup(before: .windowArrangement) {
+                Button("Show Prime Switcher") {
+                    openWindow(id: "main")
+                }
+                .keyboardShortcut("0", modifiers: [.command])
             }
             CommandMenu("Routes") {
                 Button("Turn Off All Routes") {
@@ -144,5 +156,19 @@ struct InputToOutputMonitorApp: App {
         interfaceController.stopAll()
         routeController.stopAll()
         NSApp.terminate(nil)
+    }
+}
+
+@MainActor
+final class PrimeSwitcherAppDelegate: NSObject, NSApplicationDelegate {
+    var reopenMainWindow: (() -> Void)?
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        reopenMainWindow?()
+        return false
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
     }
 }
